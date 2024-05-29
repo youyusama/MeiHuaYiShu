@@ -93,7 +93,7 @@ function show(){
     //重置分享按钮
     document.querySelector("#share").classList.remove("btn-outline-success");  
     document.querySelector("#share").classList.add("btn-outline-dark");
-    document.querySelector("#share").innerHTML = "🔗分享本页";
+    document.querySelector("#share").innerHTML = "<i class='bi bi-link-45deg me-2'></i>分享本卦";
 
     //移除链接显示
     const urlDisplay = document.querySelector(".urlDisplay");
@@ -188,8 +188,11 @@ function show(){
     互卦生克显示.innerHTML = 互卦生克;
     变卦生克显示.innerHTML = 变卦生克;
 
-    //将 .explain 内的子元素全部隐藏，从 1 开始是因为 0 是标题“八卦万物类占”，不需要隐藏。
-    let explain = document.querySelector(".explain");
+    let thingTypeExplain = document.querySelector("#thing-type-explain");
+    thingTypeExplain.removeAttribute("hidden");
+
+    //将 #万物类占 内的子元素全部隐藏，从 1 开始是因为 0 是标题“八卦万物类占”，不需要隐藏。
+    let explain = document.querySelector("#万物类占");
     explain.removeAttribute("hidden");
     for(let i = 1; i < explain.children.length; i++){
         explain.children[i].setAttribute("hidden", "hidden");
@@ -221,7 +224,7 @@ function share(){
     // btn-outline-success
     button.classList.remove("btn-outline-dark");
     button.classList.add("btn-outline-success");
-    button.innerHTML = "✔已复制";
+    button.innerHTML = "<i class='me-2 bi bi-check2'></i>已复制";
     // 新建元素显示链接
     if(!document.querySelector(".urlDisplay")){
         const urlDisplay = document.createElement('p');
