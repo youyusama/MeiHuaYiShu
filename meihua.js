@@ -63,13 +63,15 @@ function main(){
     let 主卦上卦 = getUrlParam("t") || null;
     let 主卦下卦 = getUrlParam("b") || null;
     let 动爻 = getUrlParam("c") || null;
-    console.log(主卦上卦, 主卦下卦, 动爻);
+    let 事件 = getUrlParam("h") || null;
+    console.log(主卦上卦, 主卦下卦, 动爻, 事件);
 
     if(!(主卦上卦 && 主卦下卦 || 动爻)){
         return 0;
     }
 
     动爻 = parseInt(动爻);
+    事件 = parseInt(事件);
 
     /*
     如果直接在声明变量时候转换，当 c = 0 时会导致 c = null，因为：
@@ -82,6 +84,7 @@ function main(){
     document.querySelector('#main_up').value = 主卦上卦;
     document.querySelector('#main_down').value = 主卦下卦;
     document.querySelector('#change').value = 动爻;
+    document.querySelector('#thing-type').value = 事件;
     show();
 }
 
@@ -112,8 +115,9 @@ function show(){
     let 主卦上卦 = document.querySelector('#main_up').value;
     let 主卦下卦 = document.querySelector('#main_down').value;
     let 动爻 = parseInt(document.querySelector('#change').value);
+    let 事件 = parseInt(document.querySelector('#thing-type').value);
 
-    window.history.replaceState(null, null, `?t=${主卦上卦}&b=${主卦下卦}&c=${动爻}`);
+    window.history.replaceState(null, null, `?t=${主卦上卦}&b=${主卦下卦}&c=${动爻}&h=${事件}`);
 
     let 体卦位置 = 动爻 < 3 ? "下" : "上";
     let 用卦位置 = 动爻 < 3 ? "上" : "下";
@@ -189,13 +193,28 @@ function show(){
     变卦生克显示.innerHTML = 变卦生克;
 
     let thingTypeExplain = document.querySelector("#thing-type-explain");
-    thingTypeExplain.removeAttribute("hidden");
+
 
     //将 #万物类占 内的子元素全部隐藏，从 1 开始是因为 0 是标题“八卦万物类占”，不需要隐藏。
     let explain = document.querySelector("#万物类占");
     explain.removeAttribute("hidden");
     for(let i = 1; i < explain.children.length; i++){
         explain.children[i].setAttribute("hidden", "hidden");
+    }
+
+    if(事件 != 0){
+        console.log("事件：", 事件);
+        thingTypeExplain.removeAttribute("hidden");
+        let 事件合集 = document.querySelector(`.thing-type-explain-item`);
+        for(let i = 1; i <= 18; i++){
+            事件合集.children[i].setAttribute("hidden", "hidden");
+            if(事件 == i){
+                事件合集.children[i].removeAttribute("hidden");
+            }
+        }
+
+    } else {
+        thingTypeExplain.setAttribute("hidden", "hidden");
     }
 
     卦象参考显示(主卦上卦);
