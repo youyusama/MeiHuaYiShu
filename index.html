@@ -72,6 +72,12 @@
             padding: 0.5em;
         }
 
+        .hexagram-name {
+            font-size: 0.95em;
+            color: #555;
+            white-space: nowrap;
+        }
+
         .red {
             color: #b70e0e;
         }
@@ -256,6 +262,38 @@
             flex-wrap: wrap;
         }
 
+        .result-tools {
+            width: min(1000px, calc(100% - 40px));
+            margin: 1rem auto 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .result-tools label {
+            white-space: nowrap;
+        }
+
+        .result-tools .form-control {
+            min-width: 320px;
+            max-width: 560px;
+        }
+
+        .thing-type-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .thing-type-header .form-select {
+            width: auto;
+            min-width: 120px;
+        }
+
         .hex small.wx-wood {
             color: #07e930;
         }
@@ -343,30 +381,6 @@
         </div>
     </div>
     <div class="container actions-row">
-        <div class="block inline-field">
-            <label for="thing-type">事件</label>
-            <select class="form-select" name="thing-type" id="thing-type">
-                <option value="0">无</option>
-                <option value="1">天时</option>
-                <option value="2">人事</option>
-                <option value="3">家宅</option>
-                <option value="4">屋舍</option>
-                <option value="5">婚姻</option>
-                <option value="6">生产</option>
-                <option value="7">饮食</option>
-                <option value="8">求谋</option>
-                <option value="9">求名</option>
-                <option value="10">求财</option>
-                <option value="11">交易</option>
-                <option value="12">出行</option>
-                <option value="13">行人</option>
-                <option value="14">谒见</option>
-                <option value="15">失物</option>
-                <option value="16">疾病</option>
-                <option value="17">官讼</option>
-                <option value="18">坟墓</option>
-            </select>
-        </div>
         <div class="button-group">
             <button type="button" class="btn btn-dark" onclick="排盘();"><i
                     class="bi bi-bar-chart-steps me-2"></i>起卦</button>
@@ -408,7 +422,19 @@
                 <td id="mutual_hex"></td>
                 <td id="changed_hex"></td>
             </tr>
+            <tr>
+                <td></td>
+                <td id="main_name" class="hexagram-name"></td>
+                <td id="mutual_name" class="hexagram-name"></td>
+                <td id="changed_name" class="hexagram-name"></td>
+            </tr>
         </table>
+    </div>
+    <div class="result-tools" id="result-tools" hidden>
+        <label for="asked-thing">所问之事</label>
+        <input type="text" class="form-control" id="asked-thing" placeholder="请输入更具体的问题，例如：近期跳槽能否成功？">
+        <button type="button" class="btn btn-outline-dark" id="copy-prompt" onclick="copyAnalysisPrompt();"><i
+                class="bi bi-clipboard-check me-2"></i>复制提示词</button>
     </div>
     <!-- <div class="container">
         <div class="block">
@@ -423,8 +449,31 @@
     </div> -->
     <br>
 
-    <div class="block explain" id="thing-type-explain" hidden>
-        <p class="center mb-3"><strong>事件辅助</strong></p>
+    <div class="block explain" id="thing-type-explain">
+        <div class="thing-type-header mb-3">
+            <strong>事件辅助</strong>
+            <select class="form-select" name="thing-type" id="thing-type">
+                <option value="0">无</option>
+                <option value="1">天时</option>
+                <option value="2">人事</option>
+                <option value="3">家宅</option>
+                <option value="4">屋舍</option>
+                <option value="5">婚姻</option>
+                <option value="6">生产</option>
+                <option value="7">饮食</option>
+                <option value="8">求谋</option>
+                <option value="9">求名</option>
+                <option value="10">求财</option>
+                <option value="11">交易</option>
+                <option value="12">出行</option>
+                <option value="13">行人</option>
+                <option value="14">谒见</option>
+                <option value="15">失物</option>
+                <option value="16">疾病</option>
+                <option value="17">官讼</option>
+                <option value="18">坟墓</option>
+            </select>
+        </div>
         <div class="thing-type-explain-item">
             <div id="thing-0"><!--保持空--></div>
             <div id="thing-1">

@@ -132,6 +132,7 @@ let 农历Intl可用 = null;
 let 当前卦例快照 = null;
 let 当前卦例页码 = 1;
 let 保存反馈计时器 = null;
+let 复制提示词反馈计时器 = null;
 
 function 补零(数字){
     return String(数字).padStart(2, "0");
@@ -376,8 +377,13 @@ function 更新当前卦例快照(){
         change: document.querySelector("#change").value,
         eventType: document.querySelector("#thing-type").value,
         eventLabel: document.querySelector("#thing-type").selectedOptions[0].textContent.trim(),
+        askedThing: document.querySelector("#asked-thing") ? document.querySelector("#asked-thing").value.trim() : "",
         solarText: document.querySelector("#solar-time").textContent,
         lunarText: document.querySelector("#lunar-time").textContent,
+        changeLabel: document.querySelector("#change").selectedOptions[0].textContent.trim(),
+        mainHexagramName: document.querySelector("#main_name") ? document.querySelector("#main_name").textContent.trim() : "",
+        mutualHexagramName: document.querySelector("#mutual_name") ? document.querySelector("#mutual_name").textContent.trim() : "",
+        changedHexagramName: document.querySelector("#changed_name") ? document.querySelector("#changed_name").textContent.trim() : "",
         detailHtml: 说明框.hasAttribute("hidden") ? "" : 说明框.innerHTML,
         summary: 获取当前摘要()
     };
@@ -413,7 +419,14 @@ function renderSavedCases(){
     const 当前页卦例 = 卦例列表.slice(起始索引, 起始索引 + 卦例每页数);
 
     const 列表HTML = 当前页卦例.map((卦例) => {
-        const 保存时间 = new Date(卦例.createdAt).toLocaleString("zh-CN", { hour12: false });
+        const 保存时间 = new Date(卦例.createdAt).toLocaleString("zh-CN", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false
+        });
         const 模式名称 = 卦例.mode === "time" ? "时间起卦" : (卦例.mode === "random" ? "随机起卦" : "手动起卦");
         const 时间文本 = 卦例.solarText ? ` | ${转义HTML(卦例.solarText)}` : "";
         const 事件文本 = 卦例.eventLabel && 卦例.eventLabel !== "无" ? ` | 事件：${转义HTML(卦例.eventLabel)}` : "";
@@ -464,6 +477,38 @@ function 初始化时间显示(){
     window.setInterval(更新时间显示, 1000);
 }
 
+function 更新事件辅助显示(){
+    const 事件选择 = document.querySelector("#thing-type");
+    const 事件说明框 = document.querySelector("#thing-type-explain .thing-type-explain-item");
+    const 事件合集 = document.querySelector(".thing-type-explain-item");
+    if(!(事件选择 && 事件合集 && 事件说明框)){
+        return;
+    }
+
+    const 事件 = parseInt(事件选择.value);
+    if(事件 === 0){
+        事件说明框.setAttribute("hidden", "hidden");
+    } else {
+        事件说明框.removeAttribute("hidden");
+    }
+    for(let i = 1; i <= 18; i++){
+        事件合集.children[i].setAttribute("hidden", "hidden");
+        if(事件 === i){
+            事件合集.children[i].removeAttribute("hidden");
+        }
+    }
+}
+
+function 初始化事件辅助(){
+    const 事件选择 = document.querySelector("#thing-type");
+    if(!事件选择){
+        return;
+    }
+
+    事件选择.addEventListener("change", 更新事件辅助显示);
+    更新事件辅助显示();
+}
+
 function 获取起卦模式(){
     const 已选模式 = document.querySelector('input[name="divination-mode"]:checked');
     return 已选模式 ? 已选模式.value : "manual";
@@ -502,6 +547,16 @@ function 重置保存按钮(){
     保存按钮.innerHTML = "<i class='bi bi-bookmark-plus me-2'></i>保存卦例";
 }
 
+function 重置复制提示词按钮(){
+    const 复制按钮 = document.querySelector("#copy-prompt");
+    if(!复制按钮){
+        return;
+    }
+    复制按钮.classList.remove("btn-success");
+    复制按钮.classList.add("btn-outline-dark");
+    复制按钮.innerHTML = "<i class='bi bi-clipboard-check me-2'></i>复制提示词";
+}
+
 function 显示保存成功反馈(){
     const 保存按钮 = document.querySelector("#save-case");
     if(!保存按钮){
@@ -522,7 +577,125 @@ function 显示保存成功反馈(){
     }, 1600);
 }
 
+function 显示复制提示词成功反馈(){
+    const 复制按钮 = document.querySelector("#copy-prompt");
+    if(!复制按钮){
+        return;
+    }
+
+    if(复制提示词反馈计时器){
+        window.clearTimeout(复制提示词反馈计时器);
+    }
+
+    复制按钮.classList.remove("btn-outline-dark");
+    复制按钮.classList.add("btn-success");
+    复制按钮.innerHTML = "<i class='bi bi-check2 me-2'></i>已复制";
+
+    复制提示词反馈计时器 = window.setTimeout(() => {
+        重置复制提示词按钮();
+        复制提示词反馈计时器 = null;
+    }, 1600);
+}
+
+function 生成分析提示词(){
+    if(!当前卦例快照){
+        return "";
+    }
+
+    const 所问输入 = document.querySelector("#asked-thing");
+    const 起卦时间 = 当前卦例快照.lunarText
+        ? `${当前卦例快照.solarText}；农历：${当前卦例快照.lunarText}`
+        : 当前卦例快照.solarText;
+    let 所问之事 = "未填写，请补充具体所问之事";
+    if(所问输入 && 所问输入.value.trim()){
+        所问之事 = 所问输入.value.trim();
+    } else if(当前卦例快照.eventLabel && 当前卦例快照.eventLabel !== "无"){
+        所问之事 = 当前卦例快照.eventLabel;
+    }
+
+    return `【梅花易数分析提示词模板】
+
+你现在是一位精通《易经》与“梅花易数”的国学易学专家。请你根据我提供的卦象信息和所测之事，运用梅花易数的核心理论（体用生克、五行旺衰、互变卦象、万物类象等）进行详细、客观、多维度的推演分析。
+
+一、 基本信息（已知条件）
+
+起卦时间（公历或农历/干支）： ${起卦时间}
+
+所问之事： ${所问之事}
+
+本卦（主卦）： ${当前卦例快照.mainHexagramName}
+
+互卦： ${当前卦例快照.mutualHexagramName}
+
+变卦： ${当前卦例快照.changedHexagramName}
+
+动爻： ${当前卦例快照.changeLabel}动
+
+二、 分析步骤与要求（请严格按以下结构输出你的分析）：
+
+1. 卦象拆解与体用确立
+
+请指出本卦的上卦和下卦分别是什么（以及对应的五行）。
+
+根据动爻位置，明确指出“体卦”（无动爻之卦）和“用卦”（有动爻之卦），并说明它们各自代表的五行属性。说明体卦代表的求测者状态，以及用卦代表的外部环境或所测之事的状态。
+
+2. 体用五行生克分析（核心吉凶判断）
+
+分析主卦中“体”与“用”的五行生克关系（如用生体、体生用、体用比和、用克体、体克用），并据此给出初步的吉凶论断。
+
+结合起卦时间（季节或干支），分析体卦当前的五行旺衰状态（旺相休囚死），判断求测者自身的力量强弱。
+
+3. 过程与结果推演（互卦与变卦分析）
+
+互卦分析（事情发展过程）： 分析互卦中的体用关系或互卦五行对主卦“体卦”的生克影响，推断事情在发展过程中会遇到什么阻力或助力。
+
+变卦分析（最终结局走向）： 分析变卦中的“变卦之用”（即动爻变化后产生的新经卦）与原“体卦”的生克关系，推断事情的最终结果。
+
+4. 八卦万物类象结合（具体情境映射）
+
+将卦象（如乾为天、领导、资金；巽为风、文书、进退等）的具体意象，与我【所问之事】进行精准的现实映射。解释在这个具体语境下，卦象暗示了哪些关键人物、事物特征或客观条件。
+
+5. 综合断语与行动建议
+
+断语总结： 用简明扼要的一两句话总结整件事的吉凶与趋势。
+
+行动建议： 基于上述易理推演，为我提供2-3条具有现实可操作性的指导建议（例如：应该主动出击还是静待时机？需要注意防范什么风险？适合寻找什么样的人帮忙？）。`;
+}
+
+async function copyAnalysisPrompt(){
+    if(!document.querySelector("#result").hasAttribute("hidden")){
+        更新当前卦例快照();
+    }
+    const 提示词 = 生成分析提示词();
+    if(!提示词){
+        window.alert("请先完成一次起卦。");
+        return;
+    }
+
+    try{
+        if(navigator.clipboard && typeof navigator.clipboard.writeText === "function"){
+            await navigator.clipboard.writeText(提示词);
+        } else {
+            const 输入框 = document.createElement("textarea");
+            输入框.value = 提示词;
+            document.body.appendChild(输入框);
+            输入框.select();
+            document.execCommand("copy");
+            document.body.removeChild(输入框);
+        }
+        显示复制提示词成功反馈();
+    } catch (error){
+        window.alert("复制提示词失败，请稍后重试。");
+    }
+}
+
 function saveCurrentCase(){
+    if(document.querySelector("#result").hasAttribute("hidden")){
+        window.alert("请先完成一次起卦。");
+        return;
+    }
+
+    更新当前卦例快照();
     if(!当前卦例快照){
         window.alert("请先完成一次起卦。");
         return;
@@ -558,11 +731,15 @@ function loadSavedCase(id){
     document.querySelector("#main_down").value = 卦例.mainDown;
     document.querySelector("#change").value = 卦例.change;
     document.querySelector("#thing-type").value = 卦例.eventType;
+    if(document.querySelector("#asked-thing")){
+        document.querySelector("#asked-thing").value = 卦例.askedThing || "";
+    }
 
+    更新事件辅助显示();
     更新起卦输入状态();
     show();
     显示起卦说明(卦例.detailHtml || "");
-    当前卦例快照 = 卦例;
+    更新当前卦例快照();
 }
 
 function deleteSavedCase(id){
@@ -665,20 +842,19 @@ function 初始化起卦模式(){
 function main(){
     初始化时间显示();
     初始化起卦模式();
+    初始化事件辅助();
     renderSavedCases();
 
     let 主卦上卦 = getUrlParam("t") || null;
     let 主卦下卦 = getUrlParam("b") || null;
     let 动爻 = getUrlParam("c") || null;
-    let 事件 = getUrlParam("h") || null;
-    console.log(主卦上卦, 主卦下卦, 动爻, 事件);
+    console.log(主卦上卦, 主卦下卦, 动爻);
 
     if(!(主卦上卦 && 主卦下卦 || 动爻)){
         return 0;
     }
 
     动爻 = parseInt(动爻);
-    事件 = parseInt(事件);
 
     /*
     如果直接在声明变量时候转换，当 c = 0 时会导致 c = null，因为：
@@ -691,14 +867,15 @@ function main(){
     document.querySelector('#main_up').value = 主卦上卦;
     document.querySelector('#main_down').value = 主卦下卦;
     document.querySelector('#change').value = 动爻;
-    document.querySelector('#thing-type').value = 事件;
     show();
 }
 
 function show(){
     document.querySelector("#result").removeAttribute("hidden");
+    document.querySelector("#result-tools").removeAttribute("hidden");
 
     document.querySelector("#save-case").removeAttribute("hidden");
+    重置复制提示词按钮();
     重置保存按钮();
 
     //移除链接显示
@@ -718,9 +895,8 @@ function show(){
     let 主卦上卦 = document.querySelector('#main_up').value;
     let 主卦下卦 = document.querySelector('#main_down').value;
     let 动爻 = parseInt(document.querySelector('#change').value);
-    let 事件 = parseInt(document.querySelector('#thing-type').value);
 
-    window.history.replaceState(null, null, `?t=${主卦上卦}&b=${主卦下卦}&c=${动爻}&h=${事件}`);
+    window.history.replaceState(null, null, `?t=${主卦上卦}&b=${主卦下卦}&c=${动爻}`);
 
     let 体卦位置 = 动爻 < 3 ? "下" : "上";
     let 用卦位置 = 动爻 < 3 ? "上" : "下";
@@ -773,9 +949,78 @@ function show(){
         "金": "wx-metal",
         "水": "wx-water"
     };
+    let 六十四卦 = {
+        "111111": "乾为天",
+        "111011": "天泽履",
+        "111101": "天火同人",
+        "111001": "天雷无妄",
+        "111110": "天风姤",
+        "111010": "天水讼",
+        "111100": "天山遁",
+        "111000": "天地否",
+        "011111": "泽天夬",
+        "011011": "兑为泽",
+        "011101": "泽火革",
+        "011001": "泽雷随",
+        "011110": "泽风大过",
+        "011010": "泽水困",
+        "011100": "泽山咸",
+        "011000": "泽地萃",
+        "101111": "火天大有",
+        "101011": "火泽睽",
+        "101101": "离为火",
+        "101001": "火雷噬嗑",
+        "101110": "火风鼎",
+        "101010": "火水未济",
+        "101100": "火山旅",
+        "101000": "火地晋",
+        "001111": "雷天大壮",
+        "001011": "雷泽归妹",
+        "001101": "雷火丰",
+        "001001": "震为雷",
+        "001110": "雷风恒",
+        "001010": "雷水解",
+        "001100": "雷山小过",
+        "001000": "雷地豫",
+        "110111": "风天小畜",
+        "110011": "风泽中孚",
+        "110101": "风火家人",
+        "110001": "风雷益",
+        "110110": "巽为风",
+        "110010": "风水涣",
+        "110100": "风山渐",
+        "110000": "风地观",
+        "010111": "水天需",
+        "010011": "水泽节",
+        "010101": "水火既济",
+        "010001": "水雷屯",
+        "010110": "水风井",
+        "010010": "坎为水",
+        "010100": "水山蹇",
+        "010000": "水地比",
+        "100111": "山天大畜",
+        "100011": "山泽损",
+        "100101": "山火贲",
+        "100001": "山雷颐",
+        "100110": "山风蛊",
+        "100010": "山水蒙",
+        "100100": "艮为山",
+        "100000": "山地剥",
+        "000111": "地天泰",
+        "000011": "地泽临",
+        "000101": "地火明夷",
+        "000001": "地雷复",
+        "000110": "地风升",
+        "000010": "地水师",
+        "000100": "地山谦",
+        "000000": "坤为地"
+    };
 
     const 上卦象 = document.querySelector('tr.up');
     const 下卦象 = document.querySelector('tr.down');
+    const 主卦名显示 = document.querySelector("#main_name");
+    const 互卦名显示 = document.querySelector("#mutual_name");
+    const 变卦名显示 = document.querySelector("#changed_name");
 
     上卦象.querySelector("#main_hex").innerHTML = 卦象提示(主卦上卦, 八卦, 卦名, 五行, 五行颜色类);
     上卦象.querySelector("#mutual_hex").innerHTML = 卦象提示(互卦上卦, 八卦, 卦名, 五行, 五行颜色类);
@@ -784,6 +1029,9 @@ function show(){
     下卦象.querySelector("#main_hex").innerHTML = 卦象提示(主卦下卦, 八卦, 卦名, 五行, 五行颜色类);
     下卦象.querySelector("#mutual_hex").innerHTML = 卦象提示(互卦下卦, 八卦, 卦名, 五行, 五行颜色类);
     下卦象.querySelector("#changed_hex").innerHTML = 卦象提示(变卦下卦, 八卦, 卦名, 五行, 五行颜色类);
+    主卦名显示.textContent = 六十四卦[主卦];
+    互卦名显示.textContent = 六十四卦[互卦上卦 + 互卦下卦];
+    变卦名显示.textContent = 六十四卦[变卦];
 
     if(体卦位置 == "下"){
         上卦象.querySelector("#type").innerHTML = '用';
@@ -793,29 +1041,11 @@ function show(){
         下卦象.querySelector("#type").innerHTML = '用';
     }
 
-    let thingTypeExplain = document.querySelector("#thing-type-explain");
-
-
     //将 #万物类占 内的子元素全部隐藏，从 1 开始是因为 0 是标题“八卦万物类占”，不需要隐藏。
     let explain = document.querySelector("#万物类占");
     explain.removeAttribute("hidden");
     for(let i = 1; i < explain.children.length; i++){
         explain.children[i].setAttribute("hidden", "hidden");
-    }
-
-    if(事件 != 0){
-        console.log("事件：", 事件);
-        thingTypeExplain.removeAttribute("hidden");
-        let 事件合集 = document.querySelector(`.thing-type-explain-item`);
-        for(let i = 1; i <= 18; i++){
-            事件合集.children[i].setAttribute("hidden", "hidden");
-            if(事件 == i){
-                事件合集.children[i].removeAttribute("hidden");
-            }
-        }
-
-    } else {
-        thingTypeExplain.setAttribute("hidden", "hidden");
     }
 
     卦象参考显示(主卦上卦);
