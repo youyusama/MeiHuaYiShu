@@ -88,6 +88,71 @@
             padding: 1em 2em 0.3em;
             border-radius: calc(.25rem - 1px);
         }
+        .time-display {
+            width: min(1000px, calc(100% - 40px));
+            margin: 0 auto 1.5em;
+            padding: 1em 1.25em;
+            border: 1px solid #dfdfdf;
+            border-radius: calc(.25rem - 1px);
+            background: linear-gradient(180deg, #fbfbfb 0%, #f4f4f4 100%);
+        }
+        .time-display p {
+            margin: 0.25em 0;
+            text-align: center;
+        }
+        .time-display .time-label {
+            color: #666;
+        }
+        .time-display .time-value {
+            font-family: Input, Consolas, 'Courier New', Courier, monospace;
+        }
+        .mode-picker {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            width: min(1000px, calc(100% - 40px));
+            margin: 0 auto 1.25rem;
+        }
+        .mode-picker label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            cursor: pointer;
+        }
+        .actions-row {
+            align-items: end;
+        }
+        .button-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 1em 1.5em;
+        }
+        .inline-field {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .inline-field label {
+            margin: 0;
+            white-space: nowrap;
+        }
+        .inline-field .form-select {
+            min-width: 112px;
+        }
+        .divination-detail {
+            width: min(1000px, calc(100% - 40px));
+            margin: 1rem auto 0;
+            padding: 1em 1.25em;
+            border: 1px solid #dfdfdf;
+            border-radius: calc(.25rem - 1px);
+            background-color: #fafafa;
+        }
+        .divination-detail p {
+            margin: 0.35em 0;
+        }
         .hex small.wx-wood {
             color: #07e930;
         }
@@ -113,10 +178,27 @@
     </div>
 
     <hr>
+    <div class="time-display">
+        <p><span class="time-label">公历</span> <span class="time-value" id="solar-time"></span></p>
+        <p><span class="time-label">农历</span> <span class="time-value" id="lunar-time"></span></p>
+    </div>
+    <div class="mode-picker">
+        <label for="mode-time">
+            <input type="radio" name="divination-mode" id="mode-time" value="time" checked>
+            <span>时间起卦</span>
+        </label>
+        <label for="mode-manual">
+            <input type="radio" name="divination-mode" id="mode-manual" value="manual">
+            <span>手动起卦</span>
+        </label>
+        <label for="mode-random">
+            <input type="radio" name="divination-mode" id="mode-random" value="random">
+            <span>随机起卦</span>
+        </label>
+    </div>
     <div class="container">
-        <div class="block">
-            <label for="main_up" class="mb-2">上卦</label>
-            <br>
+        <div class="block inline-field" id="main-up-block">
+            <label for="main_up">上卦</label>
             <select class="form-select" name="main_up" id="main_up">
                 <option value="111">乾 ☰</option>
                 <option value="011">兑 ☱</option>
@@ -127,11 +209,9 @@
                 <option value="100">艮 ☶</option>
                 <option value="000">坤 ☷</option>
             </select>
-
         </div>
-        <div class="block">
-            <label for="main_down" class="mb-2">下卦</label>
-            <br>
+        <div class="block inline-field" id="main-down-block">
+            <label for="main_down">下卦</label>
             <select class="form-select" name="main_down" id="main_down">
                 <option value="111">乾 ☰</option>
                 <option value="011">兑 ☱</option>
@@ -143,9 +223,8 @@
                 <option value="000">坤 ☷</option>
             </select>
         </div>
-        <div class="block">
-            <label for="change" class="mb-2">动爻</label>
-            <br>
+        <div class="block inline-field" id="change-block">
+            <label for="change">动爻</label>
             <select class="form-select" name="change" id="change">
                 <option value="5">初爻</option>
                 <option value="4">二爻</option>
@@ -155,11 +234,12 @@
                 <option value="0">上爻</option>
             </select>
         </div>
-        <div class="block">
-            <label for="thing-type" class="mb-2">事件</label>
-            <br>
+    </div>
+    <div class="container actions-row">
+        <div class="block inline-field">
+            <label for="thing-type">事件</label>
             <select class="form-select" name="thing-type" id="thing-type">
-                <option value="0">不选</option>
+                <option value="0">无</option>
                 <option value="1">天时</option>
                 <option value="2">人事</option>
                 <option value="3">家宅</option>
@@ -180,12 +260,12 @@
                 <option value="18">坟墓</option>
             </select>
         </div>
-
+        <div class="button-group">
+            <button type="button" class="btn btn-dark" onclick="排盘();"><i class="bi bi-bar-chart-steps me-2"></i>起卦</button>
+            <button type="button" class="btn btn-outline-dark" id="share" onclick="share();" hidden><i class="bi bi-link-45deg me-2"></i>分享本卦</button>
+        </div>
     </div>
-    <div class="center mt-3">
-        <button type="button" class="btn btn-dark" onclick="show();"><i class="bi bi-bar-chart-steps me-2"></i>排盘</button>
-        <button type="button" class="btn btn-outline-dark ms-2" id="share" onclick="share();" hidden><i class="bi bi-link-45deg me-2"></i>分享本卦</button>
-    </div>
+    <div class="divination-detail" id="divination-detail" hidden></div>
     <br>
     <div class="container" id="result" hidden>
         <!-- <div class="block">
