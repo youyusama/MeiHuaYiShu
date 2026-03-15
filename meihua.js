@@ -59,8 +59,8 @@ function 吉凶(结果){
     else return 结果;
 }
 
-function 五行提示(卦象, 五行, 八卦, 五行颜色类){
-    return '<span class="hex">' + 八卦[卦象] + '&nbsp;<small class="' + 五行颜色类[五行[卦象]] + '">' + 五行[卦象] + '</small></span>';
+function 卦象提示(卦象, 八卦, 卦名, 五行, 五行颜色类){
+    return '<span class="hex">' + 八卦[卦象] + '&nbsp;<small class="' + 五行颜色类[五行[卦象]] + '">' + 卦名[卦象] + '</small></span>';
 }
 
 function main(){
@@ -157,6 +157,16 @@ function show(){
         "100": "☶",
         "000": "☷"
     };
+    let 卦名 = {
+        "111": "乾",
+        "011": "兑",
+        "101": "离",
+        "001": "震",
+        "110": "巽",
+        "010": "坎",
+        "100": "艮",
+        "000": "坤"
+    };
     let 五行颜色类 = {
         "木": "wx-wood",
         "火": "wx-fire",
@@ -168,40 +178,21 @@ function show(){
     const 上卦象 = document.querySelector('tr.up');
     const 下卦象 = document.querySelector('tr.down');
 
-    上卦象.querySelector("#main_hex").innerHTML = 五行提示(主卦上卦, 五行, 八卦, 五行颜色类);
-    上卦象.querySelector("#mutual_hex").innerHTML = 五行提示(互卦上卦, 五行, 八卦, 五行颜色类);
-    上卦象.querySelector("#changed_hex").innerHTML = 五行提示(变卦上卦, 五行, 八卦, 五行颜色类);
+    上卦象.querySelector("#main_hex").innerHTML = 卦象提示(主卦上卦, 八卦, 卦名, 五行, 五行颜色类);
+    上卦象.querySelector("#mutual_hex").innerHTML = 卦象提示(互卦上卦, 八卦, 卦名, 五行, 五行颜色类);
+    上卦象.querySelector("#changed_hex").innerHTML = 卦象提示(变卦上卦, 八卦, 卦名, 五行, 五行颜色类);
 
-    下卦象.querySelector("#main_hex").innerHTML = 五行提示(主卦下卦, 五行, 八卦, 五行颜色类);
-    下卦象.querySelector("#mutual_hex").innerHTML = 五行提示(互卦下卦, 五行, 八卦, 五行颜色类);
-    下卦象.querySelector("#changed_hex").innerHTML = 五行提示(变卦下卦, 五行, 八卦, 五行颜色类);
-
-    const 主卦生克显示 = document.querySelector("#main_live");
-    const 互卦生克显示 = document.querySelector("#mutual_live");
-    const 变卦生克显示 = document.querySelector("#changed_live");
-    
-    let 主卦生克 = 吉凶(生克(五行[主卦上卦], 五行[主卦下卦]).replace(体卦位置, "体").replace(用卦位置, "用"));
-    let 互卦生克 = "";
-    let 变卦生克 = 吉凶(生克(五行[变卦上卦], 五行[变卦下卦]).replace(体卦位置, "体").replace(用卦位置, "用")).replace("用", "变");
+    下卦象.querySelector("#main_hex").innerHTML = 卦象提示(主卦下卦, 八卦, 卦名, 五行, 五行颜色类);
+    下卦象.querySelector("#mutual_hex").innerHTML = 卦象提示(互卦下卦, 八卦, 卦名, 五行, 五行颜色类);
+    下卦象.querySelector("#changed_hex").innerHTML = 卦象提示(变卦下卦, 八卦, 卦名, 五行, 五行颜色类);
 
     if(体卦位置 == "下"){
         上卦象.querySelector("#type").innerHTML = '用';
         下卦象.querySelector("#type").innerHTML = '体';
-        if(生克(五行[主卦下卦], 五行[互卦上卦]).replace("上", "体").replace("下", "互") == "互克体") {
-            互卦生克 = "互克体";
-        }
-        互卦生克 = 吉凶(生克(五行[主卦下卦], 五行[互卦上卦]).replace("上", "体").replace("下", "互")) + '<br>' + 吉凶(生克(五行[主卦下卦], 五行[互卦下卦]).replace("上", "体").replace("下", "互"));
-
     } else {
         上卦象.querySelector("#type").innerHTML = '体';
         下卦象.querySelector("#type").innerHTML = '用';
-        互卦生克 = 吉凶(生克(五行[主卦上卦], 五行[互卦上卦]).replace("上", "体").replace("下", "互")) + '<br>' + 吉凶(生克(五行[主卦上卦], 五行[互卦下卦]).replace("上", "体").replace("下", "互"));
     }
-
-
-    主卦生克显示.innerHTML = 主卦生克;
-    互卦生克显示.innerHTML = 互卦生克;
-    变卦生克显示.innerHTML = 变卦生克;
 
     let thingTypeExplain = document.querySelector("#thing-type-explain");
 
