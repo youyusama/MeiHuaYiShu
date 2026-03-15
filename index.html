@@ -186,6 +186,76 @@
             margin: 0.35em 0;
         }
 
+        .saved-cases {
+            width: min(1000px, calc(100% - 40px));
+            margin: 2rem auto 0;
+        }
+
+        .saved-case-item {
+            border: 1px solid #dfdfdf;
+            border-radius: calc(.25rem - 1px);
+            padding: 0.5em 0.7em;
+            margin: 0 auto 0.45rem;
+            background-color: #fff;
+            width: fit-content;
+            max-width: 100%;
+        }
+
+        .saved-case-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .saved-case-meta {
+            color: #666;
+            font-size: 0.92em;
+            white-space: nowrap;
+        }
+
+        .saved-case-actions {
+            display: flex;
+            gap: 0.35rem;
+            flex-wrap: wrap;
+        }
+
+        .saved-case-line {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .saved-case-text {
+            flex: 0 1 420px;
+            max-width: 420px;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .saved-case-empty {
+            border: 1px dashed #cfcfcf;
+            border-radius: calc(.25rem - 1px);
+            padding: 1rem;
+            text-align: center;
+            color: #666;
+            background-color: #fcfcfc;
+        }
+
+        .saved-cases-pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            flex-wrap: wrap;
+        }
+
         .hex small.wx-wood {
             color: #07e930;
         }
@@ -300,8 +370,8 @@
         <div class="button-group">
             <button type="button" class="btn btn-dark" onclick="排盘();"><i
                     class="bi bi-bar-chart-steps me-2"></i>起卦</button>
-            <button type="button" class="btn btn-outline-dark" id="share" onclick="share();" hidden><i
-                    class="bi bi-link-45deg me-2"></i>分享本卦</button>
+            <button type="button" class="btn btn-outline-dark" id="save-case" onclick="saveCurrentCase();" hidden><i
+                    class="bi bi-bookmark-plus me-2"></i>保存卦例</button>
         </div>
     </div>
     <div class="divination-detail" id="divination-detail" hidden></div>
@@ -1052,6 +1122,11 @@
                 href="https://github.com/Hsiao-Feng/MeiHuaYiShu-Analysis/blob/main/LICENSE">MIT License</a> 授权。</p>
     </div>
     <br> -->
+    <div class="saved-cases">
+        <p class="center mb-3"><strong>本地卦例</strong></p>
+        <div id="saved-cases-list"></div>
+    </div>
+    <br>
     <script src="meihua.js?20220611"></script>
 </body>
 

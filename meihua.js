@@ -106,6 +106,9 @@ const 动爻数到名称 = {
     5: "五爻",
     6: "上爻"
 };
+const 卦例存储键 = "meihua_saved_cases";
+const 最大卦例数 = 100;
+const 卦例每页数 = 5;
 const 农历数据 = [
     0x04bd8, 0x04ae0, 0x0a570, 0x054d5, 0x0d260, 0x0d950, 0x16554, 0x056a0, 0x09ad0, 0x055d2,
     0x04ae0, 0x0a5b6, 0x0a4d0, 0x0d250, 0x1d255, 0x0b540, 0x0d6a0, 0x0ada2, 0x095b0, 0x14977,
@@ -126,6 +129,9 @@ const 农历数据 = [
 let 农历更新标记 = null;
 let 农历格式化器 = null;
 let 农历Intl可用 = null;
+let 当前卦例快照 = null;
+let 当前卦例页码 = 1;
+let 保存反馈计时器 = null;
 
 function 补零(数字){
     return String(数字).padStart(2, "0");
@@ -285,6 +291,15 @@ function 获取中文年份(年份){
     return String(年份).split("").map((数字) => 中文数字[parseInt(数字, 10)]).join("");
 }
 
+function 转义HTML(文本){
+    return String(文本)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+}
+
 function 规范农历Intl文本(文本){
     let 结果 = 文本;
 
@@ -319,6 +334,112 @@ function 获取农历文本(时间){
 
 function 获取农历日期文本(农历日期){
     return `${获取干支年(农历日期.年份)}年${农历日期.是否闰月 ? "闰" : ""}${农历月份名称[农历日期.月份 - 1]}月${获取农历日名(农历日期.日期)}`;
+}
+
+function 获取已保存卦例(){
+    try{
+        const 原始数据 = window.localStorage.getItem(卦例存储键);
+        if(!原始数据){
+            return [];
+        }
+        const 卦例列表 = JSON.parse(原始数据);
+        return Array.isArray(卦例列表) ? 卦例列表 : [];
+    } catch (error){
+        return [];
+    }
+}
+
+function 写入已保存卦例(卦例列表){
+    try{
+        window.localStorage.setItem(卦例存储键, JSON.stringify(卦例列表.slice(0, 最大卦例数)));
+        return true;
+    } catch (error){
+        return false;
+    }
+}
+
+function 获取当前摘要(){
+    const 上卦文本 = document.querySelector("#main_up").selectedOptions[0].textContent.trim();
+    const 下卦文本 = document.querySelector("#main_down").selectedOptions[0].textContent.trim();
+    const 动爻文本 = document.querySelector("#change").selectedOptions[0].textContent.trim();
+    return `${上卦文本} / ${下卦文本} / ${动爻文本}`;
+}
+
+function 更新当前卦例快照(){
+    const 说明框 = document.querySelector("#divination-detail");
+    当前卦例快照 = {
+        id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+        createdAt: new Date().toISOString(),
+        mode: 获取起卦模式(),
+        mainUp: document.querySelector("#main_up").value,
+        mainDown: document.querySelector("#main_down").value,
+        change: document.querySelector("#change").value,
+        eventType: document.querySelector("#thing-type").value,
+        eventLabel: document.querySelector("#thing-type").selectedOptions[0].textContent.trim(),
+        solarText: document.querySelector("#solar-time").textContent,
+        lunarText: document.querySelector("#lunar-time").textContent,
+        detailHtml: 说明框.hasAttribute("hidden") ? "" : 说明框.innerHTML,
+        summary: 获取当前摘要()
+    };
+}
+
+function 切换卦例页码(页码){
+    当前卦例页码 = 页码;
+    renderSavedCases();
+}
+
+function renderSavedCases(){
+    const 列表容器 = document.querySelector("#saved-cases-list");
+    if(!列表容器){
+        return;
+    }
+
+    const 卦例列表 = 获取已保存卦例();
+    if(卦例列表.length === 0){
+        当前卦例页码 = 1;
+        列表容器.innerHTML = '<div class="saved-case-empty">暂无已保存的卦例。</div>';
+        return;
+    }
+
+    const 总页数 = Math.max(1, Math.ceil(卦例列表.length / 卦例每页数));
+    if(当前卦例页码 > 总页数){
+        当前卦例页码 = 总页数;
+    }
+    if(当前卦例页码 < 1){
+        当前卦例页码 = 1;
+    }
+
+    const 起始索引 = (当前卦例页码 - 1) * 卦例每页数;
+    const 当前页卦例 = 卦例列表.slice(起始索引, 起始索引 + 卦例每页数);
+
+    const 列表HTML = 当前页卦例.map((卦例) => {
+        const 保存时间 = new Date(卦例.createdAt).toLocaleString("zh-CN", { hour12: false });
+        const 模式名称 = 卦例.mode === "time" ? "时间起卦" : (卦例.mode === "random" ? "随机起卦" : "手动起卦");
+        const 时间文本 = 卦例.solarText ? ` | ${转义HTML(卦例.solarText)}` : "";
+        const 事件文本 = 卦例.eventLabel && 卦例.eventLabel !== "无" ? ` | 事件：${转义HTML(卦例.eventLabel)}` : "";
+
+        return `
+            <div class="saved-case-item">
+                <div class="saved-case-line">
+                    <div class="saved-case-text"><strong>${转义HTML(卦例.summary)}</strong><span class="saved-case-meta"> | ${转义HTML(模式名称)} | 保存于 ${转义HTML(保存时间)}${时间文本}${事件文本}</span></div>
+                    <div class="saved-case-actions">
+                        <button type="button" class="btn btn-outline-dark btn-sm" onclick="loadSavedCase('${卦例.id}')">读取</button>
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteSavedCase('${卦例.id}')">删除</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join("");
+
+    const 分页HTML = 总页数 > 1 ? `
+        <div class="saved-cases-pagination">
+            <button type="button" class="btn btn-outline-dark btn-sm" onclick="切换卦例页码(${当前卦例页码 - 1})" ${当前卦例页码 === 1 ? "disabled" : ""}>上一页</button>
+            <span>第 ${当前卦例页码} / ${总页数} 页</span>
+            <button type="button" class="btn btn-outline-dark btn-sm" onclick="切换卦例页码(${当前卦例页码 + 1})" ${当前卦例页码 === 总页数 ? "disabled" : ""}>下一页</button>
+        </div>
+    ` : "";
+
+    列表容器.innerHTML = 列表HTML + 分页HTML;
 }
 
 function 更新时间显示(){
@@ -369,6 +490,88 @@ function 设置起卦选择(上卦数, 下卦数, 动爻数){
     document.querySelector("#main_up").value = 八卦数到编码[上卦数];
     document.querySelector("#main_down").value = 八卦数到编码[下卦数];
     document.querySelector("#change").value = 动爻数到值[动爻数];
+}
+
+function 重置保存按钮(){
+    const 保存按钮 = document.querySelector("#save-case");
+    if(!保存按钮){
+        return;
+    }
+    保存按钮.classList.remove("btn-success");
+    保存按钮.classList.add("btn-outline-dark");
+    保存按钮.innerHTML = "<i class='bi bi-bookmark-plus me-2'></i>保存卦例";
+}
+
+function 显示保存成功反馈(){
+    const 保存按钮 = document.querySelector("#save-case");
+    if(!保存按钮){
+        return;
+    }
+
+    if(保存反馈计时器){
+        window.clearTimeout(保存反馈计时器);
+    }
+
+    保存按钮.classList.remove("btn-outline-dark");
+    保存按钮.classList.add("btn-success");
+    保存按钮.innerHTML = "<i class='bi bi-check2 me-2'></i>已保存";
+
+    保存反馈计时器 = window.setTimeout(() => {
+        重置保存按钮();
+        保存反馈计时器 = null;
+    }, 1600);
+}
+
+function saveCurrentCase(){
+    if(!当前卦例快照){
+        window.alert("请先完成一次起卦。");
+        return;
+    }
+
+    const 卦例列表 = 获取已保存卦例();
+    卦例列表.unshift({
+        ...当前卦例快照,
+        id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+        createdAt: new Date().toISOString()
+    });
+    if(!写入已保存卦例(卦例列表)){
+        window.alert("当前浏览器无法写入本地卦例。");
+        return;
+    }
+    当前卦例页码 = 1;
+    renderSavedCases();
+    显示保存成功反馈();
+}
+
+function loadSavedCase(id){
+    const 卦例 = 获取已保存卦例().find((项目) => 项目.id === id);
+    if(!卦例){
+        return;
+    }
+
+    const 模式按钮 = document.querySelector(`input[name="divination-mode"][value="${卦例.mode}"]`);
+    if(模式按钮){
+        模式按钮.checked = true;
+    }
+
+    document.querySelector("#main_up").value = 卦例.mainUp;
+    document.querySelector("#main_down").value = 卦例.mainDown;
+    document.querySelector("#change").value = 卦例.change;
+    document.querySelector("#thing-type").value = 卦例.eventType;
+
+    更新起卦输入状态();
+    show();
+    显示起卦说明(卦例.detailHtml || "");
+    当前卦例快照 = 卦例;
+}
+
+function deleteSavedCase(id){
+    const 卦例列表 = 获取已保存卦例().filter((项目) => 项目.id !== id);
+    if(!写入已保存卦例(卦例列表)){
+        window.alert("当前浏览器无法写入本地卦例。");
+        return;
+    }
+    renderSavedCases();
 }
 
 function 显示起卦说明(内容){
@@ -462,6 +665,7 @@ function 初始化起卦模式(){
 function main(){
     初始化时间显示();
     初始化起卦模式();
+    renderSavedCases();
 
     let 主卦上卦 = getUrlParam("t") || null;
     let 主卦下卦 = getUrlParam("b") || null;
@@ -494,12 +698,8 @@ function main(){
 function show(){
     document.querySelector("#result").removeAttribute("hidden");
 
-    document.querySelector("#share").removeAttribute("hidden"); //显示分享按钮
-
-    //重置分享按钮
-    document.querySelector("#share").classList.remove("btn-outline-success");  
-    document.querySelector("#share").classList.add("btn-outline-dark");
-    document.querySelector("#share").innerHTML = "<i class='bi bi-link-45deg me-2'></i>分享本卦";
+    document.querySelector("#save-case").removeAttribute("hidden");
+    重置保存按钮();
 
     //移除链接显示
     const urlDisplay = document.querySelector(".urlDisplay");
@@ -625,33 +825,13 @@ function show(){
     卦象参考显示(变卦上卦);
     卦象参考显示(变卦下卦);
 
+    更新当前卦例快照();
+
 
 }
 
 function 卦象参考显示(卦){
     document.querySelector(`#g${卦}`).removeAttribute("hidden");
-}
-
-function share(){
-    const url = window.location.href;
-    const input = document.createElement('input');
-    const button = document.querySelector("#share");
-    input.value = url;
-    document.body.appendChild(input);
-    input.select();
-    document.execCommand('copy');
-    document.body.removeChild(input);
-    // btn-outline-success
-    button.classList.remove("btn-outline-dark");
-    button.classList.add("btn-outline-success");
-    button.innerHTML = "<i class='me-2 bi bi-check2'></i>已复制";
-    // 新建元素显示链接
-    if(!document.querySelector(".urlDisplay")){
-        const urlDisplay = document.createElement('p');
-        urlDisplay.className = "urlDisplay p-3 text-light center mt-4";
-        urlDisplay.innerHTML = `如复制失败，可手动复制本卦链接：<br><u>${url}</u>`;
-        document.querySelector("#share").parentElement.appendChild(urlDisplay);
-    }
 }
 
 main();
